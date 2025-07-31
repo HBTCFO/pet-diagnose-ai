@@ -2,41 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Diagnose-Pet.AI Design System - Medical meets Pet-friendly */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Medical Sky Blue & Mint Palette */
+    --background: 40 100% 98%;  /* Cream #FDF8EC base */
+    --foreground: 215 20% 15%;  /* Dark text for readability */
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 20% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 215 20% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Sky Blue Primary */
+    --primary: 198 82% 79%;  /* Sky Blue #AEE6F9 */
+    --primary-foreground: 215 20% 15%;
+    --primary-glow: 198 82% 85%;
+    
+    /* Mint Secondary */
+    --secondary: 162 65% 82%;  /* Mint #B8F2E6 */
+    --secondary-foreground: 215 20% 15%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Coral Accent */
+    --accent: 12 100% 69%;  /* Coral #FF8360 */
+    --accent-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Success Green */
+    --success: 135 55% 68%;  /* Green #7DDE92 */
+    --success-foreground: 215 20% 15%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Gamification Purple */
+    --gamification: 259 67% 75%;  /* Violet #B78AFF */
+    --gamification-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Panic/Emergency Red */
+    --panic: 0 84% 60%;
+    --panic-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --muted: 198 25% 90%;
+    --muted-foreground: 215 15% 45%;
 
-    --radius: 0.5rem;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 198 20% 85%;
+    --input: 198 20% 85%;
+    --ring: 198 82% 79%;
+
+    --radius: 0.75rem;
+
+    /* Gradients for beautiful effects */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)));
+    --gradient-accent: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--success)));
+    --gradient-panic: linear-gradient(135deg, hsl(var(--panic)), hsl(var(--accent)));
+
+    /* Shadows for depth */
+    --shadow-glow: 0 8px 32px hsl(var(--primary) / 0.15);
+    --shadow-card: 0 4px 20px hsl(215 20% 15% / 0.08);
+    --shadow-panic: 0 8px 32px hsl(var(--panic) / 0.2);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
     --sidebar-background: 0 0% 98%;
 
