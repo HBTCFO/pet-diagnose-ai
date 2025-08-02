@@ -29,6 +29,44 @@ serve(async (req) => {
     console.log('Files count:', files.length);
     console.log('Panic mode:', panicMode);
 
+    // Upload files to OpenAI
+    console.log('Uploading files to OpenAI...');
+    const uploadedFiles = [];
+    
+    for (const file of files) {
+      try {
+        // Convert base64 to blob
+        const base64Data = file.data.split(',')[1];
+        const binaryData = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
+        
+        // Create form data for file upload
+        const formData = new FormData();
+        const blob = new Blob([binaryData], { type: file.type });
+        formData.append('file', blob, file.name);
+        formData.append('purpose', 'vision');
+
+        const uploadResponse = await fetch('https://api.openai.com/v1/files', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          },
+          body: formData,
+        });
+
+        const uploadResult = await uploadResponse.json();
+        if (uploadResult.id) {
+          uploadedFiles.push({
+            fileId: uploadResult.id,
+            name: file.name,
+            type: file.type
+          });
+          console.log(`File uploaded: ${file.name} -> ${uploadResult.id}`);
+        }
+      } catch (error) {
+        console.error(`Error uploading file ${file.name}:`, error);
+      }
+    }
+
     // Create a thread
     console.log('Creating OpenAI thread...');
     const threadResponse = await fetch('https://api.openai.com/v1/threads', {
@@ -45,24 +83,38 @@ serve(async (req) => {
     console.log('Thread created:', thread.id);
 
     // Prepare the message content
-    let messageContent = `Please analyze the following pet diagnostic data:
+    let prompt = `Проанализируй следующий случай с питомцем:
 
-Pet Information:
-- Species: ${petInfo.species || 'Not specified'}
-- Age: ${petInfo.age || 'Not specified'}
-- Symptoms: ${petInfo.symptoms || 'Not specified'}
+Информация о питомце:
+- Вид: ${petInfo.species || 'Не указан'}
+- Возраст: ${petInfo.age || 'Не указан'}
+- Симптомы: ${petInfo.symptoms || 'Не указаны'}
 
-${panicMode ? '🚨 URGENT CASE - PANIC MODE ACTIVATED 🚨' : ''}
+${panicMode ? '🚨 ЭКСТРЕННЫЙ СЛУЧАЙ - ПАНИЧЕСКИЙ РЕЖИМ 🚨' : ''}
 
-Files provided: ${files.length} file(s)
+Загружено файлов: ${uploadedFiles.length}
 `;
 
-    // Add file information
-    files.forEach((file: any, index: number) => {
-      messageContent += `\nFile ${index + 1}: ${file.name} (${file.type})`;
+    // Create message content with files
+    const messageContent = [];
+    
+    // Add text prompt
+    messageContent.push({
+      type: 'text',
+      text: prompt
     });
 
-    messageContent += '\n\nPlease provide a detailed analysis and recommendations.';
+    // Add images
+    for (const file of uploadedFiles) {
+      if (file.type.startsWith('image/')) {
+        messageContent.push({
+          type: 'image_file',
+          image_file: {
+            file_id: file.fileId
+          }
+        });
+      }
+    }
 
     // Add message to thread
     console.log('Adding message to thread...');
