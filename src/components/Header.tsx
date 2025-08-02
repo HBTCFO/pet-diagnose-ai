@@ -1,9 +1,19 @@
 import { Button } from "@/components/ui/button";
-import { Heart, Menu, X, Shield, Globe } from "lucide-react";
+import { Heart, Menu, X, User, LogOut, Globe } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -45,16 +55,40 @@ const Header = () => {
                 <option>EN</option>
               </select>
             </div>
-            <Button variant="ghost" size="sm">
-              Войти
-            </Button>
-            <Button 
-              variant="hero" 
-              size="sm"
-              onClick={() => window.location.href = '/upload'}
-            >
-              Начать диагностику
-            </Button>
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    {user.email}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>
+                    <User className="mr-2 h-4 w-4" />
+                    Профиль
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Выйти
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Link to="/auth">
+                  <Button variant="ghost" size="sm">
+                    Войти
+                  </Button>
+                </Link>
+                <Link to="/upload">
+                  <Button variant="hero" size="sm">
+                    Начать диагностику
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -85,17 +119,31 @@ const Header = () => {
               <a href="#contact" className="text-muted-foreground hover:text-foreground transition-colors">
                 Контакты
               </a>
-              <div className="flex items-center justify-between pt-4 border-t border-border">
-                <Button variant="ghost" size="sm">
-                  Войти
-                </Button>
-                <Button 
-                  variant="hero" 
-                  size="sm"
-                  onClick={() => window.location.href = '/upload'}
-                >
-                  Начать диагностику
-                </Button>
+              <div className="flex flex-col space-y-2 pt-4 border-t border-border">
+                {user ? (
+                  <>
+                    <div className="text-sm text-muted-foreground mb-2">
+                      {user.email}
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={signOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Выйти
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/auth">
+                      <Button variant="ghost" size="sm" className="w-full">
+                        Войти
+                      </Button>
+                    </Link>
+                    <Link to="/upload">
+                      <Button variant="hero" size="sm" className="w-full">
+                        Начать диагностику
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </nav>
           </div>
