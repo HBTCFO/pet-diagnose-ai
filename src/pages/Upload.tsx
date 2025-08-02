@@ -2,12 +2,22 @@ import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Upload as UploadIcon, X, AlertTriangle, FileImage, FileText, Camera } from "lucide-react";
+import { Upload as UploadIcon, X, AlertTriangle, FileImage, FileText, Camera, Loader2 } from "lucide-react";
 import Header from "@/components/Header";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/use-toast";
 
 const Upload = () => {
   const [files, setFiles] = useState<File[]>([]);
   const [panicMode, setPanicMode] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysis, setAnalysis] = useState<string | null>(null);
+  const [petInfo, setPetInfo] = useState({
+    species: 'Собака',
+    age: '',
+    symptoms: ''
+  });
+  const [consent, setConsent] = useState(false);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     setFiles(prev => [...prev, ...acceptedFiles].slice(0, 10));
@@ -31,6 +41,79 @@ const Upload = () => {
     if (file.type.startsWith('image/')) return <FileImage className="w-4 h-4" />;
     if (file.type === 'application/pdf') return <FileText className="w-4 h-4" />;
     return <Camera className="w-4 h-4" />;
+  };
+
+  const startAnalysis = async () => {
+    if (files.length === 0) {
+      toast({
+        title: "Ошибка",
+        description: "Выберите файлы для анализа",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!panicMode && !consent) {
+      toast({
+        title: "Ошибка", 
+        description: "Необходимо согласиться с условиями использования",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setAnalysis(null);
+
+    try {
+      // Convert files to base64 for sending
+      const filesData = await Promise.all(
+        files.map(async (file) => ({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          data: await fileToBase64(file)
+        }))
+      );
+
+      const { data, error } = await supabase.functions.invoke('analyze-pet', {
+        body: {
+          files: filesData,
+          petInfo,
+          panicMode
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setAnalysis(data.analysis);
+        toast({
+          title: "Анализ завершен",
+          description: "Результаты готовы к просмотру",
+        });
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (error) {
+      console.error('Analysis error:', error);
+      toast({
+        title: "Ошибка анализа",
+        description: error.message || "Попробуйте снова",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
   };
 
   return (
@@ -139,7 +222,11 @@ const Upload = () => {
                       <label className="block text-sm font-medium text-foreground mb-2">
                         Вид животного
                       </label>
-                      <select className="w-full p-3 border border-input rounded-lg bg-background">
+                      <select 
+                        className="w-full p-3 border border-input rounded-lg bg-background"
+                        value={petInfo.species}
+                        onChange={(e) => setPetInfo(prev => ({ ...prev, species: e.target.value }))}
+                      >
                         <option>Собака</option>
                         <option>Кошка</option>
                         <option>Другое</option>
@@ -154,6 +241,8 @@ const Upload = () => {
                         type="text" 
                         placeholder="Например: 2 года"
                         className="w-full p-3 border border-input rounded-lg bg-background"
+                        value={petInfo.age}
+                        onChange={(e) => setPetInfo(prev => ({ ...prev, age: e.target.value }))}
                       />
                     </div>
                     
@@ -165,6 +254,8 @@ const Upload = () => {
                         placeholder="Опишите что беспокоит питомца..."
                         rows={3}
                         className="w-full p-3 border border-input rounded-lg bg-background resize-none"
+                        value={petInfo.symptoms}
+                        onChange={(e) => setPetInfo(prev => ({ ...prev, symptoms: e.target.value }))}
                       />
                     </div>
                   </div>
@@ -183,17 +274,24 @@ const Upload = () => {
               )}
 
               {/* Legal Consent */}
-              <Card className="p-4 bg-muted/20">
-                <div className="flex items-start space-x-3">
-                  <input type="checkbox" className="mt-1" />
-                  <div className="text-xs text-muted-foreground">
-                    Я согласен с{" "}
-                    <a href="/legal/terms" className="text-primary underline">условиями использования</a>
-                    {" "}и понимаю, что это предварительная диагностика, 
-                    не заменяющая визит к ветеринару.
+              {!panicMode && (
+                <Card className="p-4 bg-muted/20">
+                  <div className="flex items-start space-x-3">
+                    <input 
+                      type="checkbox" 
+                      className="mt-1"
+                      checked={consent}
+                      onChange={(e) => setConsent(e.target.checked)}
+                    />
+                    <div className="text-xs text-muted-foreground">
+                      Я согласен с{" "}
+                      <a href="/legal/terms" className="text-primary underline">условиями использования</a>
+                      {" "}и понимаю, что это предварительная диагностика, 
+                      не заменяющая визит к ветеринару.
+                    </div>
                   </div>
-                </div>
-              </Card>
+                </Card>
+              )}
 
               {/* Action Buttons */}
               <div className="space-y-3">
@@ -201,9 +299,17 @@ const Upload = () => {
                   variant={panicMode ? "panic" : "hero"} 
                   size="lg" 
                   className="w-full"
-                  disabled={files.length === 0}
+                  disabled={files.length === 0 || isAnalyzing}
+                  onClick={startAnalysis}
                 >
-                  {panicMode ? "Экстренный анализ" : "Начать диагностику"}
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Анализируем...
+                    </>
+                  ) : (
+                    panicMode ? "Экстренный анализ" : "Начать диагностику"
+                  )}
                 </Button>
                 
                 <div className="text-center">
@@ -212,6 +318,16 @@ const Upload = () => {
                   </p>
                 </div>
               </div>
+
+              {/* Analysis Results */}
+              {analysis && (
+                <Card className="p-6 border-primary/20 bg-primary/5">
+                  <h3 className="font-semibold text-foreground mb-4">Результаты анализа</h3>
+                  <div className="prose prose-sm max-w-none">
+                    <div className="whitespace-pre-wrap text-foreground">{analysis}</div>
+                  </div>
+                </Card>
+              )}
             </div>
           </div>
         </div>
