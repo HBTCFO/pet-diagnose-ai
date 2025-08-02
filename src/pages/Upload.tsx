@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Button } from "@/components/ui/button";
@@ -322,7 +323,7 @@ const Upload = () => {
 
             {/* Analysis Results */}
             {analysis && (
-              <Card className="p-6 border-primary/20 bg-primary/5 lg:col-span-2">
+              <Card className="p-6 border-primary/20 bg-primary/5 col-span-2">
                 <h3 className="font-semibold text-foreground mb-4">Результаты анализа</h3>
                 <div className="prose prose-sm max-w-none">
                   <div className="whitespace-pre-wrap text-foreground">{analysis}</div>
