@@ -1,3 +1,5 @@
+# 🐾 Pet Diagnose AI — тестовое изменение
+
 # Welcome to your Lovable project
 
 ## Project info
